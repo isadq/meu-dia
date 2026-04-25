@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Meu Dia">
+<title>Meu Dia</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface2: #efede8;
+  --border: #e0ddd6;
+  --text: #1a1916;
+  --text2: #6b6860;
+  --text3: #a09e99;
+  --accent: #2c5f2e;
+  --accent-light: #e8f0e8;
+  --danger: #c0392b;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141412;
+    --surface: #1e1d1b;
+    --surface2: #272522;
+    --border: #2e2c29;
+    --text: #f0ede8;
+    --text2: #908e89;
+    --text3: #5a5855;
+    --accent: #5a9e5c;
+    --accent-light: #1a2e1a;
+    --danger: #e05a4e;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); }
+body { display: flex; flex-direction: column; max-width: 680px; margin: 0 auto; }
+
+.app-header {
+  padding: calc(var(--safe-top) + 16px) 20px 0;
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 100;
+}
+.app-title { font-size: 28px; font-weight: 500; letter-spacing: -0.5px; color: var(--text); }
+.app-date { font-size: 13px; color: var(--text3); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+.tabs {
+  display: flex; gap: 4px; padding: 12px 20px 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky; top: 72px; z-index: 99;
+}
+.tab {
+  padding: 8px 18px; font-size: 14px; font-weight: 400;
+  font-family: 'DM Sans', sans-serif;
+  border: none; background: none; color: var(--text2);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; border-radius: 0; transition: color 0.15s;
+}
+.tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 500; }
+
+.content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: calc(var(--safe-bottom) + 24px); }
+.section { display: none; } .section.active { display: block; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px; margin-bottom: 14px;
+}
+.card-title { font-size: 13px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+
+.metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.metric { background: var(--surface2); border-radius: var(--radius-sm); padding: 14px 16px; }
+.metric-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+.metric-value { font-size: 24px; font-weight: 500; color: var(--text); font-family: 'DM Mono', monospace; letter-spacing: -0.5px; }
+.metric-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+.form-field { margin-bottom: 14px; }
+.form-field label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; }
+.form-field input, .form-field select {
+  width: 100%; padding: 12px 14px; font-size: 15px;
+  font-family: 'DM Sans', sans-serif; color: var(--text);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); outline: none; appearance: none;
+  transition: border-color 0.15s;
+}
+.form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+.btn {
+  padding: 13px 22px; border-radius: var(--radius-sm);
+  font-size: 15px; font-family: 'DM Sans', sans-serif; font-weight: 500;
+  cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s;
+}
+.btn:active { transform: scale(0.97); opacity: 0.85; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+
+.timer-bar {
+  display: none; background: var(--accent-light); border: 1px solid var(--accent);
+  border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 14px;
+  flex-direction: column; gap: 8px;
+}
+.timer-bar.show { display: flex; }
+.timer-top { display: flex; justify-content: space-between; align-items: center; }
+.timer-name { font-size: 14px; font-weight: 500; color: var(--accent); }
+.timer-clock { font-size: 28px; font-weight: 500; color: var(--accent); font-family: 'DM Mono', monospace; letter-spacing: -1px; }
+.btn-stop { background: var(--accent); color: #fff; border: none; padding: 8px 18px; border-radius: var(--radius-sm); font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; }
+
+.tl-item { display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start; }
+.tl-line { display: flex; flex-direction: column; align-items: center; }
+.tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.tl-bar { width: 2px; background: var(--border); flex: 1; min-height: 16px; margin-top: 4px; }
+.tl-content { flex: 1; background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 14px; }
+.tl-title { font-size: 15px; font-weight: 500; color: var(--text); }
+.tl-meta { font-size: 12px; color: var(--text3); margin-top: 3px; font-family: 'DM Mono', monospace; }
+.tl-badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; margin-top: 6px; }
+.tl-obs { font-size: 12px; color: var(--text2); margin-top: 5px; font-style: italic; }
+.tl-remove { font-size: 11px; color: var(--danger); background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; margin-top: 4px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); }
+.legend-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+.chart-wrap { position: relative; height: 200px; width: 100%; }
+.chart-wrap-bar { position: relative; height: 180px; width: 100%; }
+
+.history-day { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.history-date { font-size: 14px; font-weight: 500; color: var(--text); }
+.history-total { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; }
+.mini-bar { height: 6px; border-radius: 3px; display: flex; overflow: hidden; margin-bottom: 8px; background: var(--border); }
+.mini-seg { height: 100%; }
+
+.empty { text-align: center; color: var(--text3); font-size: 14px; padding: 32px 0; }
+
+.section-subtitle { font-size: 13px; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="app-title">Meu Dia</div>
+  <div class="app-date" id="header-date"></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('registrar')">Registrar</button>
+  <button class="tab" onclick="showTab('hoje')">Hoje</button>
+  <button class="tab" onclick="showTab('historico')">Histórico</button>
+</div>
+
+<div class="content">
+
+  <!-- REGISTRAR -->
+  <div id="registrar" class="section active">
+    <div id="timer-bar" class="timer-bar">
+      <div class="timer-top">
+        <div>
+          <div class="timer-name" id="timer-nome"></div>
+          <div style="font-size:11px;color:var(--accent);margin-top:2px" id="timer-inicio-label"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="timer-clock" id="timer-clock">00:00</div>
+          <button class="btn-stop" onclick="stopTimer()">Finalizar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Nova atividade</div>
+      <div class="form-field">
+        <label>Atividade</label>
+        <input type="text" id="inp-nome" placeholder="Ex: Estudar para prova de MIP">
+      </div>
+      <div class="form-grid" style="margin-bottom:14px">
+        <div class="form-field" style="margin-bottom:0">
+          <label>Categoria</label>
+          <select id="inp-cat">
+            <option value="Estudo">📖 Estudo</option>
+            <option value="Aula">🏫 Aula</option>
+            <option value="Deslocamento">🚌 Deslocamento</option>
+            <option value="Alimentação">🍽️ Alimentação</option>
+            <option value="Descanso">😴 Descanso</option>
+            <option value="Celular">📱 Celular</option>
+            <option value="Exercício">🏃 Exercício</option>
+            <option value="Sono">🌙 Sono</option>
+            <option value="Outros">📌 Outros</option>
+          </select>
+        </div>
+        <div class="form-field" style="margin-bottom:0">
+          <label>Data</label>
+          <input type="date" id="inp-data">
+        </div>
+      </div>
+      <div class="form-grid3" style="margin-bottom:14px">
+        <div class="form-field" style="margin-bottom:0">
+          <label>Início</label>
+          <input type="time" id="inp-inicio">
+        </div>
+        <div class="form-field" style="margin-bottom:0">
+          <label>Fim</label>
+          <input type="time" id="inp-fim">
+        </div>
+        <div class="form-field" style="margin-bottom:0">
+          <label>Duração</label>
+          <input type="text" id="inp-dur-display" placeholder="—" readonly style="color:var(--text3)">
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Observação (opcional)</label>
+        <input type="text" id="inp-obs" placeholder="Ex: Revisei capítulo 3">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="addAtividade()">Adicionar</button>
+        <button class="btn btn-secondary" onclick="startTimer()">⏱ Cronômetro</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Atividades de hoje</div>
+      <div id="lista-hoje"></div>
+    </div>
+  </div>
+
+  <!-- HOJE -->
+  <div id="hoje" class="section">
+    <div class="metric-grid" id="dash-metrics"></div>
+    <div class="card">
+      <div class="card-title">Por categoria</div>
+      <div class="legend" id="donut-legend"></div>
+      <div class="chart-wrap"><canvas id="donutChart" role="img" aria-label="Distribuição de tempo por categoria hoje"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Linha do tempo</div>
+      <div id="timeline-hoje"></div>
+    </div>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div id="historico" class="section">
+    <div class="card">
+      <div class="card-title">Horas produtivas — últimos 7 dias</div>
+      <div class="chart-wrap-bar"><canvas id="barChart" role="img" aria-label="Horas produtivas por dia nos últimos 7 dias"></canvas></div>
+    </div>
+    <div id="hist-list"></div>
+  </div>
+
+</div>
+
+<script>
+const CAT_COLORS = {
+  'Estudo':'#2c5f2e','Aula':'#534AB7','Deslocamento':'#888780',
+  'Alimentação':'#c07d1a','Descanso':'#1d9e75','Celular':'#D85A30',
+  'Exercício':'#639922','Sono':'#185FA5','Outros':'#a09e99'
+};
+const PROD = ['Estudo','Aula','Exercício'];
+
+let dados = JSON.parse(localStorage.getItem('meu_dia_v1') || '[]');
+let timerInterval = null, timerStart = null;
+
+function save(){ localStorage.setItem('meu_dia_v1', JSON.stringify(dados)); }
+
+function todayStr(){
+  return new Date().toISOString().slice(0,10);
+}
+function nowTime(){
+  return new Date().toTimeString().slice(0,5);
+}
+function pad(n){ return String(n).padStart(2,'0'); }
+function durMin(ini, fim){
+  const [h1,m1]=ini.split(':').map(Number), [h2,m2]=fim.split(':').map(Number);
+  return (h2*60+m2)-(h1*60+m1);
+}
+function fmtDur(min){
+  if(!min||min<=0) return '0 min';
+  const h=Math.floor(min/60), m=min%60;
+  return h>0 ? `${h}h${m>0?` ${m}min`:''}` : `${m}min`;
+}
+function fmtDate(str){
+  const [y,mo,d]=str.split('-');
+  const dias=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const dt = new Date(str+'T12:00:00');
+  return `${dias[dt.getDay()]} ${d}/${mo}`;
+}
+
+function initHeader(){
+  const d = new Date();
+  const dias=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const meses=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  document.getElementById('header-date').textContent =
+    `${dias[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+function initForm(){
+  document.getElementById('inp-data').value = todayStr();
+  document.getElementById('inp-inicio').value = nowTime();
+  document.getElementById('inp-fim').value = '';
+  document.getElementById('inp-dur-display').value = '';
+}
+
+document.getElementById('inp-fim').addEventListener('input', function(){
+  const ini = document.getElementById('inp-inicio').value;
+  const fim = this.value;
+  if(ini && fim){
+    const d = durMin(ini, fim);
+    document.getElementById('inp-dur-display').value = d > 0 ? fmtDur(d) : '—';
+  }
+});
+
+function addAtividade(){
+  const nome = document.getElementById('inp-nome').value.trim();
+  const cat = document.getElementById('inp-cat').value;
+  const data = document.getElementById('inp-data').value;
+  const ini = document.getElementById('inp-inicio').value;
+  const fim = document.getElementById('inp-fim').value;
+  const obs = document.getElementById('inp-obs').value.trim();
+  if(!nome||!data||!ini||!fim){ alert('Preencha nome, data, início e fim.'); return; }
+  const dur = durMin(ini, fim);
+  if(dur <= 0){ alert('O fim deve ser após o início.'); return; }
+  dados.push({ id: Date.now(), nome, cat, data, ini, fim, dur, obs });
+  save();
+  document.getElementById('inp-nome').value = '';
+  document.getElementById('inp-obs').value = '';
+  document.getElementById('inp-inicio').value = fim;
+  document.getElementById('inp-fim').value = '';
+  document.getElementById('inp-dur-display').value = '';
+  renderLista();
+}
+
+function removeAtiv(id){
+  if(!confirm('Remover atividade?')) return;
+  dados = dados.filter(a => a.id !== id);
+  save(); renderLista();
+}
+
+function startTimer(){
+  const nome = document.getElementById('inp-nome').value.trim();
+  const cat = document.getElementById('inp-cat').value;
+  if(!nome){ alert('Digite o nome da atividade antes de iniciar.'); return; }
+  timerStart = new Date();
+  const ini = nowTime();
+  document.getElementById('inp-inicio').value = ini;
+  document.getElementById('timer-nome').textContent = nome + ' · ' + cat;
+  document.getElementById('timer-inicio-label').textContent = 'Iniciado às ' + ini;
+  document.getElementById('timer-bar').classList.add('show');
+  timerInterval = setInterval(()=>{
+    const diff = Math.floor((new Date()-timerStart)/1000);
+    document.getElementById('timer-clock').textContent = pad(Math.floor(diff/60))+':'+pad(diff%60);
+  }, 1000);
+}
+
+function stopTimer(){
+  clearInterval(timerInterval); timerInterval = null;
+  document.getElementById('inp-fim').value = nowTime();
+  document.getElementById('timer-bar').classList.remove('show');
+  const ini = document.getElementById('inp-inicio').value;
+  const fim = document.getElementById('inp-fim').value;
+  if(ini && fim){
+    const d = durMin(ini, fim);
+    document.getElementById('inp-dur-display').value = d > 0 ? fmtDur(d) : '—';
+  }
+}
+
+function renderLista(){
+  const hoje = document.getElementById('inp-data').value || todayStr();
+  const lista = dados.filter(a=>a.data===hoje).sort((a,b)=>a.ini.localeCompare(b.ini));
+  const el = document.getElementById('lista-hoje');
+  if(!lista.length){ el.innerHTML='<div class="empty">Nenhuma atividade registrada ainda.</div>'; return; }
+  el.innerHTML = lista.map((a,i)=>`
+    <div class="tl-item">
+      <div class="tl-line">
+        <div class="tl-dot" style="background:${CAT_COLORS[a.cat]||'#888'}"></div>
+        ${i<lista.length-1?'<div class="tl-bar"></div>':''}
+      </div>
+      <div class="tl-content">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div class="tl-title">${a.nome}</div>
+          <button class="tl-remove" onclick="removeAtiv(${a.id})">remover</button>
+        </div>
+        <div class="tl-meta">${a.ini} → ${a.fim} · ${fmtDur(a.dur)}</div>
+        <span class="tl-badge" style="background:${CAT_COLORS[a.cat]}22;color:${CAT_COLORS[a.cat]}">${a.cat}</span>
+        ${a.obs?`<div class="tl-obs">${a.obs}</div>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+let donutChart=null, barChart=null;
+
+function renderDash(){
+  const hoje = todayStr();
+  const lista = dados.filter(a=>a.data===hoje).sort((a,b)=>a.ini.localeCompare(b.ini));
+  const total = lista.reduce((s,a)=>s+a.dur,0);
+  const prod = lista.filter(a=>PROD.includes(a.cat)).reduce((s,a)=>s+a.dur,0);
+  const cel = lista.filter(a=>a.cat==='Celular').reduce((s,a)=>s+a.dur,0);
+  const desc = lista.filter(a=>['Descanso','Sono'].includes(a.cat)).reduce((s,a)=>s+a.dur,0);
+
+  document.getElementById('dash-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Total registrado</div><div class="metric-value">${fmtDur(total)}</div></div>
+    <div class="metric"><div class="metric-label">Produtivo</div><div class="metric-value">${fmtDur(prod)}</div><div class="metric-sub">${total?Math.round(prod/total*100):0}% do total</div></div>
+    <div class="metric"><div class="metric-label">Celular</div><div class="metric-value">${fmtDur(cel)}</div></div>
+    <div class="metric"><div class="metric-label">Descanso</div><div class="metric-value">${fmtDur(desc)}</div></div>
+  `;
+
+  const bycat={};
+  lista.forEach(a=>{ bycat[a.cat]=(bycat[a.cat]||0)+a.dur; });
+  const cats=Object.keys(bycat), vals=cats.map(c=>bycat[c]), colors=cats.map(c=>CAT_COLORS[c]||'#888');
+
+  document.getElementById('donut-legend').innerHTML = cats.length
+    ? cats.map((c,i)=>`<span class="legend-item"><span class="legend-dot" style="background:${colors[i]}"></span>${c} · ${fmtDur(vals[i])}</span>`).join('')
+    : '<span style="color:var(--text3);font-size:13px">Nenhuma atividade hoje.</span>';
+
+  if(donutChart) donutChart.destroy();
+  if(!cats.length) return;
+  donutChart = new Chart(document.getElementById('donutChart'),{
+    type:'doughnut',
+    data:{ labels:cats, datasets:[{data:vals, backgroundColor:colors, borderWidth:0}]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+fmtDur(c.raw)}} }, cutout:'60%' }
+  });
+
+  const tl = document.getElementById('timeline-hoje');
+  if(!lista.length){ tl.innerHTML='<div class="empty">Nenhuma atividade registrada.</div>'; return; }
+  tl.innerHTML = lista.map((a,i)=>`
+    <div class="tl-item">
+      <div class="tl-line">
+        <div class="tl-dot" style="background:${CAT_COLORS[a.cat]||'#888'}"></div>
+        ${i<lista.length-1?'<div class="tl-bar"></div>':''}
+      </div>
+      <div class="tl-content">
+        <div class="tl-title">${a.nome}</div>
+        <div class="tl-meta">${a.ini} → ${a.fim} · ${fmtDur(a.dur)}</div>
+        <span class="tl-badge" style="background:${CAT_COLORS[a.cat]}22;color:${CAT_COLORS[a.cat]}">${a.cat}</span>
+        ${a.obs?`<div class="tl-obs">${a.obs}</div>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderHist(){
+  const days={};
+  dados.forEach(a=>{ if(!days[a.data]) days[a.data]=[]; days[a.data].push(a); });
+  const sorted = Object.keys(days).sort().reverse().slice(0,7);
+
+  const labels = sorted.map(fmtDate).reverse();
+  const prods = sorted.map(d=>parseFloat((days[d].filter(a=>PROD.includes(a.cat)).reduce((s,a)=>s+a.dur,0)/60).toFixed(1))).reverse();
+
+  if(barChart) barChart.destroy();
+  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  barChart = new Chart(document.getElementById('barChart'),{
+    type:'bar',
+    data:{ labels, datasets:[{label:'h produtivas', data:prods, backgroundColor: isDark ? '#5a9e5c' : '#2c5f2e', borderRadius:6}]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ y:{beginAtZero:true, ticks:{callback:v=>v+'h', color: isDark?'#908e89':'#6b6860'}, grid:{color: isDark?'#2e2c29':'#e0ddd6'}},
+               x:{ticks:{color: isDark?'#908e89':'#6b6860', autoSkip:false, maxRotation:30}, grid:{display:false}} }
+    }
+  });
+
+  const hist = document.getElementById('hist-list');
+  if(!sorted.length){ hist.innerHTML='<div class="empty">Nenhum histórico ainda.</div>'; return; }
+  hist.innerHTML = sorted.map(d=>{
+    const lista = days[d].sort((a,b)=>a.ini.localeCompare(b.ini));
+    const total = lista.reduce((s,a)=>s+a.dur,0);
+    const bycat={};
+    lista.forEach(a=>{ bycat[a.cat]=(bycat[a.cat]||0)+a.dur; });
+    const segs = Object.entries(bycat).map(([c,v])=>`<div class="mini-seg" style="width:${Math.round(v/total*100)}%;background:${CAT_COLORS[c]||'#888'}"></div>`).join('');
+    return `
+      <div class="history-day">
+        <div class="history-header">
+          <div class="history-date">${fmtDate(d)}</div>
+          <div class="history-total">${fmtDur(total)} registrados</div>
+        </div>
+        <div class="mini-bar">${segs}</div>
+        <div class="legend" style="margin-bottom:0">
+          ${Object.entries(bycat).map(([c,v])=>`<span class="legend-item"><span class="legend-dot" style="background:${CAT_COLORS[c]||'#888'}"></span>${c} ${fmtDur(v)}</span>`).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showTab(t){
+  document.querySelectorAll('.tab').forEach(el=>{
+    el.classList.toggle('active', el.textContent.trim()==={registrar:'Registrar',hoje:'Hoje',historico:'Histórico'}[t]);
+  });
+  document.querySelectorAll('.section').forEach(el=>el.classList.remove('active'));
+  document.getElementById(t).classList.add('active');
+  if(t==='hoje') renderDash();
+  if(t==='historico') renderHist();
+}
+
+initHeader();
+initForm();
+renderLista();
+</script>
+</body>
+</html>
